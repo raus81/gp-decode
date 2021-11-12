@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "6.3.0"
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = 1.8
+
+group 'it.gi'
+version '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0'
+    implementation 'net.openhft:chronicle-map:3.22ea5'
+    implementation 'io.github.ehn-digital-green-development:base45:0.0.3'
+    implementation 'com.upokecenter:cbor:4.4.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
