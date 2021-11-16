@@ -14,4 +14,11 @@ class InfoSyncTest {
         infoSync.downloadKeys();;
 
     }
+
+    @Test
+    void downloadVerificationData() throws IOException {
+        InfoSync infoSync = new InfoSync();
+        infoSync.downloadVerificationData();
+
+    }
 }

@@ -3,6 +3,9 @@ package model.decoder;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RecoveryStatement {
 
@@ -26,4 +29,12 @@ public class RecoveryStatement {
 
     @JsonProperty("ci")
     String certificateIdentifier;
+
+    public LocalDate getValidFrom(){
+        return LocalDate.parse(certificateValidFrom, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    }
+
+    public LocalDate getValidUntil(){
+        return LocalDate.parse(certificateValidUntil, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    }
 }

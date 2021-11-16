@@ -3,9 +3,9 @@ package service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import com.upokecenter.cbor.CBORObject;
-import model.CertificateModel;
-import model.CertificateX509;
-import model.decoder.GreenCertificate;
+import exception.DataErrorException;
+import model.*;
+import model.decoder.*;
 import nl.minvws.encoding.Base45;
 
 import java.io.ByteArrayInputStream;
@@ -16,10 +16,13 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 public class DecodeService {
+
 
     private byte[] getBytes(String rawCose) throws Exception {
         rawCose = rawCose.replaceAll("^HC1:", "");
@@ -97,12 +100,12 @@ public class DecodeService {
         return Base64.encode(kid.GetByteString());
     }
 
-    public PublicKey getCertificateFromKid(String kid) throws IOException {
-        
+    private PublicKey getCertificateFromKid(String kid) throws IOException {
+
         KeyService ks = new KeyService();
         CertificateX509 x509Cert = ks.getFromKid(kid);
 
-       // String x509Cert = "MIIEDzCCAfegAwIBAgIURldu5rsfrDeZtDBxrJ+SujMr2IswDQYJKoZIhvcNAQELBQAwSTELMAkGA1UEBhMCSVQxHzAdBgNVBAoMFk1pbmlzdGVybyBkZWxsYSBTYWx1dGUxGTAXBgNVBAMMEEl0YWx5IERHQyBDU0NBIDEwHhcNMjEwNTEyMDgxODE3WhcNMjMwNTEyMDgxMTU5WjBIMQswCQYDVQQGEwJJVDEfMB0GA1UECgwWTWluaXN0ZXJvIGRlbGxhIFNhbHV0ZTEYMBYGA1UEAwwPSXRhbHkgREdDIERTQyAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnL9+WnIp9fvbcocZSGUFlSw9ffW/jbMONzcvm1X4c+pXOPEs7C4/83+PxS8Swea2hgm/tKt4PI0z8wgnIehoj6OBujCBtzAfBgNVHSMEGDAWgBS+VOVpXmeSQImXYEEAB/pLRVCw/zBlBgNVHR8EXjBcMFqgWKBWhlRsZGFwOi8vY2Fkcy5kZ2MuZ292Lml0L0NOPUl0YWx5JTIwREdDJTIwQ1NDQSUyMHhcMSxPPU1pbmlzdGVybyUyMGRlbGxhJTIwU2FsdXRlLEM9SVQwHQYDVR0OBBYEFC4bAbCvpArrgZ0E+RrqS8V7TNNIMA4GA1UdDwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAgEAjxTeF7yhKz/3PKZ9+WfgZPaIzZvnO/nmuUartgVd3xuTPNtd5tuYRNS/1B78HNNk7fXiq5hH2q8xHF9yxYxExov2qFrfUMD5HOZzYKHZcjcWFNHvH6jx7qDCtb5PrOgSK5QUQzycR7MgWIFinoWwsWIrA1AJOwfUoi7v1aoWNMK1eHZmR3Y9LQ84qeE2yDk3jqEGjlJVCbgBp7O8emzy2KhWv3JyRZgTmFz7p6eRXDzUYHtJaufveIhkNM/U8p3S7egQegliIFMmufvEyZemD2BMvb97H9PQpuzeMwB8zcFbuZmNl42AFMQ2PhQe27pU0wFsDEqLe0ETb5eR3T9L6zdSrWldw6UuXoYV0/5fvjA55qCjAaLJ0qi16Ca/jt6iKuws/KKh9yr+FqZMnZUH2D2j2i8LBA67Ie0JoZPSojr8cwSTxQBdJFI722uczCj/Rt69Y4sLdV3hNQ2A9hHrXesyQslr0ez3UHHzDRFMVlOXWCayj3LIgvtfTjKrT1J+/3Vu9fvs1+CCJELuC9gtVLxMsdRc/A6/bvW4mAsyY78ROX27Bi8CxPN5IZbtiyjpmdfr2bufDcwhwzdwsdQQDoSiIF1LZqCn7sHBmUhzoPcBJdXFET58EKow0BWcerZzpvsVHcMTE2uuAUr/JUh1SBpoJCiMIRSl+XPoEA2qqYU=";
+        // String x509Cert = "MIIEDzCCAfegAwIBAgIURldu5rsfrDeZtDBxrJ+SujMr2IswDQYJKoZIhvcNAQELBQAwSTELMAkGA1UEBhMCSVQxHzAdBgNVBAoMFk1pbmlzdGVybyBkZWxsYSBTYWx1dGUxGTAXBgNVBAMMEEl0YWx5IERHQyBDU0NBIDEwHhcNMjEwNTEyMDgxODE3WhcNMjMwNTEyMDgxMTU5WjBIMQswCQYDVQQGEwJJVDEfMB0GA1UECgwWTWluaXN0ZXJvIGRlbGxhIFNhbHV0ZTEYMBYGA1UEAwwPSXRhbHkgREdDIERTQyAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnL9+WnIp9fvbcocZSGUFlSw9ffW/jbMONzcvm1X4c+pXOPEs7C4/83+PxS8Swea2hgm/tKt4PI0z8wgnIehoj6OBujCBtzAfBgNVHSMEGDAWgBS+VOVpXmeSQImXYEEAB/pLRVCw/zBlBgNVHR8EXjBcMFqgWKBWhlRsZGFwOi8vY2Fkcy5kZ2MuZ292Lml0L0NOPUl0YWx5JTIwREdDJTIwQ1NDQSUyMHhcMSxPPU1pbmlzdGVybyUyMGRlbGxhJTIwU2FsdXRlLEM9SVQwHQYDVR0OBBYEFC4bAbCvpArrgZ0E+RrqS8V7TNNIMA4GA1UdDwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAgEAjxTeF7yhKz/3PKZ9+WfgZPaIzZvnO/nmuUartgVd3xuTPNtd5tuYRNS/1B78HNNk7fXiq5hH2q8xHF9yxYxExov2qFrfUMD5HOZzYKHZcjcWFNHvH6jx7qDCtb5PrOgSK5QUQzycR7MgWIFinoWwsWIrA1AJOwfUoi7v1aoWNMK1eHZmR3Y9LQ84qeE2yDk3jqEGjlJVCbgBp7O8emzy2KhWv3JyRZgTmFz7p6eRXDzUYHtJaufveIhkNM/U8p3S7egQegliIFMmufvEyZemD2BMvb97H9PQpuzeMwB8zcFbuZmNl42AFMQ2PhQe27pU0wFsDEqLe0ETb5eR3T9L6zdSrWldw6UuXoYV0/5fvjA55qCjAaLJ0qi16Ca/jt6iKuws/KKh9yr+FqZMnZUH2D2j2i8LBA67Ie0JoZPSojr8cwSTxQBdJFI722uczCj/Rt69Y4sLdV3hNQ2A9hHrXesyQslr0ez3UHHzDRFMVlOXWCayj3LIgvtfTjKrT1J+/3Vu9fvs1+CCJELuC9gtVLxMsdRc/A6/bvW4mAsyY78ROX27Bi8CxPN5IZbtiyjpmdfr2bufDcwhwzdwsdQQDoSiIF1LZqCn7sHBmUhzoPcBJdXFET58EKow0BWcerZzpvsVHcMTE2uuAUr/JUh1SBpoJCiMIRSl+XPoEA2qqYU=";
         byte[] in = java.util.Base64.getDecoder().decode(x509Cert.getCertificate());
         InputStream inputStream = new ByteArrayInputStream(in);
 
@@ -117,7 +120,7 @@ public class DecodeService {
         }
     }
 
-    public static byte[] transcodeSignatureToDER(byte[] jwsSignature)
+    private static byte[] transcodeSignatureToDER(byte[] jwsSignature)
             throws Exception {
 
         // Adapted from org.apache.xml.security.algorithms.implementations.SignatureECDSA
@@ -226,6 +229,84 @@ public class DecodeService {
     }
 
 
+    private String checkStatus(GreenCertificate gc) throws DataErrorException {
+        CertificateType type = gc.getType();
+        switch (type) {
+            case VACCINATION:
+                verifyVaccine(gc.getVaccinations());
+                break;
+            case TEST:
+                verifyTest(gc.getTests());
+                break;
+            case RECOVERY:
+                verifyRecovery(gc.getRecoveryStatements());
+                break;
+            case UNKNOWN:
+                break;
+            default:
+                break;
+        }
+        return "";
+    }
+
+    private GreenPassCertificateStatus verifyRecovery(List<RecoveryStatement> recoveryStatements) {
+        RecoveryStatement rs = recoveryStatements.get(0);
+
+        LocalDate now = LocalDate.now();
+        LocalDate validFrom = rs.getValidFrom();
+        LocalDate validUntil = rs.getValidUntil();
+        if (validFrom.isAfter(now)) {
+            return GreenPassCertificateStatus.NOT_VALID_YET;
+        } else if (validUntil.isBefore(now)) {
+            return GreenPassCertificateStatus.NOT_VALID;
+        }
+
+        return GreenPassCertificateStatus.VALID;
+    }
+
+    private void verifyTest(List<Test> tests) {
+        Test test = tests.get(0);
+    }
+
+    private CheckResult verifyVaccine(List<Vaccination> vaccinations) throws DataErrorException {
+        Vaccination vaccination = vaccinations.get(0);
+        String medicinalProduct = vaccination.getMedicinalProduct();
+
+        VaccineInfo vaccineInfo = new KeyService().getFromName(medicinalProduct);
+
+        CheckResult cr = new CheckResult();
+
+        LocalDate dateOfVaccination = vaccination.getDateOfVaccination();
+        Integer doseNumber = vaccination.getDoseNumber();
+        Integer totalSeriesOfDoses = vaccination.getTotalSeriesOfDoses();
+
+        LocalDate now = LocalDate.now();
+        LocalDate startDate;
+        LocalDate endDate;
+        String message = "";
+        if (doseNumber >= totalSeriesOfDoses) {
+            startDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayComplete()));
+            endDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayComplete()));
+
+        } else {
+            startDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayNotComplete()));
+            endDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayNotComplete()));
+        }
+        boolean valid = (now.isAfter(startDate) || now.isEqual(startDate)) && (now.isBefore(endDate));
+        if (startDate.isAfter(now)) {
+            message = "Vaccino non ancora valido";
+        } else if (endDate.isBefore(now)) {
+            message = "Vaccino scaduto";
+        } else {
+            message = "Vaccinazioen valida";
+
+        }
+
+        cr.setValid(valid);
+        cr.setMessage(message);
+
+        return cr;
+    }
 
     public CertificateModel getCertificateModel(String rawCose) throws Exception {
 
@@ -236,7 +317,7 @@ public class DecodeService {
         certificateModel.setCborValid(verifySignature(rawCose));
         certificateModel.setType(gc.getType());
 
-        //certificateModel.setStatus(checkStatus(gc));
+        certificateModel.setStatus(checkStatus(gc));
 
 
         return certificateModel;
