@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import model.CertificateX509;
 import model.decoder.PassInfo;
 import net.openhft.chronicle.map.ChronicleMap;
+import store.CertificateStore;
+import store.InfoStore;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +24,8 @@ public class InfoSync {
 
     public void downloadVerificationData() throws IOException {
         StoreService storeService = new StoreService();
-        ChronicleMap<CharSequence, PassInfo> passInfoStore = storeService.getPassInfoStore();
+        InfoStore passInfoStore = storeService.getPassInfoStore();
+
         String settingsUrl = "https://get.dgc.gov.it/v1/dgc/settings";
         URL url = new URL(settingsUrl);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -45,13 +48,20 @@ public class InfoSync {
         });
 
         properties.forEach(info -> {
-            passInfoStore.put(info.getHashKey(),info);
+            try {
+                passInfoStore.putItem(info.getHashKey(), info);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
     }
 
     public void downloadKeys() throws IOException {
-        StoreService storeService = new StoreService();
-        ChronicleMap<CharSequence, CertificateX509> certificateStore = storeService.getCertificateStore();
+        //StoreService storeService = new StoreService();
+        //ChronicleMap<CharSequence, CertificateX509> certificateStore = storeService.getCertificateStore();
+
+        CertificateStore storeService = new CertificateStore();
+
         String gpUrl = "https://get.dgc.gov.it/v1/dgc/signercertificate/update";
 
         URL url = new URL(gpUrl);
@@ -97,7 +107,7 @@ public class InfoSync {
                 break;
             }
 
-            certificateStore.put(kid, cert);
+            storeService.putItem(kid, cert);
 
         }
 

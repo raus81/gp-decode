@@ -1,5 +1,6 @@
 package service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import com.upokecenter.cbor.CBORObject;
@@ -17,6 +18,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -24,7 +27,7 @@ import java.util.zip.Inflater;
 public class DecodeService {
 
 
-    private byte[] getBytes(String rawCose) throws Exception {
+    private byte[] getBytes(String rawCose) throws DataErrorException {
         rawCose = rawCose.replaceAll("^HC1:", "");
         byte[] data = null;
 
@@ -40,13 +43,13 @@ public class DecodeService {
             }
             data = outputStream.toByteArray();
         } catch (DataFormatException e) {
-            throw new Exception("Impossibile decodificare QR code");
+            throw new DataErrorException("Impossibile decodificare QR code");
         }
 
         return data;
     }
 
-    public GreenCertificate decodeGreenPass(String rawCode) throws Exception {
+    public GreenCertificate decodeGreenPass(String rawCode) throws DataErrorException {
         byte[] data = getBytes(rawCode);
         CBORObject messageObject = CBORObject.DecodeFromBytes(data);
         byte[] rawContent = messageObject.get(2).GetByteString();
@@ -59,7 +62,13 @@ public class DecodeService {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
 
-        return objectMapper.readValue(json, GreenCertificate.class);
+        GreenCertificate greenCertificate = null;
+        try {
+            greenCertificate = objectMapper.readValue(json, GreenCertificate.class);
+        } catch (JsonProcessingException e) {
+            throw new DataErrorException("Impossibile decodificare i dati");
+        }
+        return greenCertificate;
 
 
         //return new HashMap<>();
@@ -100,7 +109,7 @@ public class DecodeService {
         return Base64.encode(kid.GetByteString());
     }
 
-    private PublicKey getCertificateFromKid(String kid) throws IOException {
+    private PublicKey getCertificateFromKid(String kid) throws IOException, ClassNotFoundException {
 
         KeyService ks = new KeyService();
         CertificateX509 x509Cert = ks.getFromKid(kid);
@@ -229,24 +238,25 @@ public class DecodeService {
     }
 
 
-    private String checkStatus(GreenCertificate gc) throws DataErrorException {
+    private GreenPassCertificateStatus checkStatus(GreenCertificate gc) throws DataErrorException{
         CertificateType type = gc.getType();
+        GreenPassCertificateStatus cs = GreenPassCertificateStatus.NOT_VALID;
         switch (type) {
             case VACCINATION:
-                verifyVaccine(gc.getVaccinations());
+                cs = verifyVaccine(gc.getVaccinations());
                 break;
             case TEST:
-                verifyTest(gc.getTests());
+                cs = verifyTest(gc.getTests());
                 break;
             case RECOVERY:
-                verifyRecovery(gc.getRecoveryStatements());
+                cs = verifyRecovery(gc.getRecoveryStatements());
                 break;
             case UNKNOWN:
                 break;
             default:
                 break;
         }
-        return "";
+        return cs;
     }
 
     private GreenPassCertificateStatus verifyRecovery(List<RecoveryStatement> recoveryStatements) {
@@ -264,15 +274,40 @@ public class DecodeService {
         return GreenPassCertificateStatus.VALID;
     }
 
-    private void verifyTest(List<Test> tests) {
+    private GreenPassCertificateStatus verifyTest(List<Test> tests) throws DataErrorException{
         Test test = tests.get(0);
+
+        TestInfo ti = null;
+        try {
+            ti = new KeyService().getTestInfoFromName(test.getTypeOfTest());
+        } catch (Exception e) {
+           throw new DataErrorException("Impossibile trovare informazioni sul test");
+        }
+
+        LocalDateTime localDateTime = OffsetDateTime.parse(test.getDateTimeOfCollection()).toLocalDateTime();
+
+        LocalDateTime startTime = localDateTime.plusHours(Long.valueOf(ti.getStartHours()));
+        LocalDateTime endTime = localDateTime.plusHours(Long.valueOf(ti.getEndHours()));
+
+        if (LocalDateTime.now().isAfter(endTime)) {
+            return GreenPassCertificateStatus.NOT_VALID;
+        } else if (LocalDateTime.now().isBefore(startTime)) {
+            return GreenPassCertificateStatus.NOT_VALID_YET;
+        }
+
+        return GreenPassCertificateStatus.VALID;
     }
 
-    private CheckResult verifyVaccine(List<Vaccination> vaccinations) throws DataErrorException {
+    private GreenPassCertificateStatus verifyVaccine(List<Vaccination> vaccinations) throws DataErrorException {
         Vaccination vaccination = vaccinations.get(0);
         String medicinalProduct = vaccination.getMedicinalProduct();
 
-        VaccineInfo vaccineInfo = new KeyService().getFromName(medicinalProduct);
+        VaccineInfo vaccineInfo = null;
+        try {
+            vaccineInfo = new KeyService().getVaccineInfoFromName(medicinalProduct);
+        } catch (Exception e) {
+            throw new DataErrorException("Impossibile ottenere informazione su vacciono");
+        }
 
         CheckResult cr = new CheckResult();
 
@@ -295,20 +330,16 @@ public class DecodeService {
         boolean valid = (now.isAfter(startDate) || now.isEqual(startDate)) && (now.isBefore(endDate));
         if (startDate.isAfter(now)) {
             message = "Vaccino non ancora valido";
+            return GreenPassCertificateStatus.NOT_VALID_YET;
         } else if (endDate.isBefore(now)) {
             message = "Vaccino scaduto";
-        } else {
-            message = "Vaccinazioen valida";
-
+            return GreenPassCertificateStatus.NOT_VALID;
         }
+        return GreenPassCertificateStatus.VALID;
 
-        cr.setValid(valid);
-        cr.setMessage(message);
-
-        return cr;
     }
 
-    public CertificateModel getCertificateModel(String rawCose) throws Exception {
+    public CertificateModel getCertificateModel(String rawCose) throws DataErrorException {
 
         CertificateModel certificateModel = new CertificateModel();
 

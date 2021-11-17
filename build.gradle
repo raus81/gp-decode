@@ -14,6 +14,9 @@ repositories {
 }
 
 dependencies {
+    implementation 'commons-codec:commons-codec:1.15'
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0'
     implementation 'net.openhft:chronicle-map:3.22ea5'
     implementation 'io.github.ehn-digital-green-development:base45:0.0.3'
