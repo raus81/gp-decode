@@ -15,13 +15,22 @@ import java.util.Date;
 
 public class KeyService {
 
+    private String baseUrl = "c:/gamma/api/store";
+
+    public KeyService(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public KeyService() {
+    }
+
     public static final String VACCINE_START_DAY_COMPLETE = "vaccine_start_day_complete";
     public static final String VACCINE_END_DAY_COMPLETE = "vaccine_end_day_complete";
     public static final String VACCINE_END_DAY_NOT_COMPLETE = "vaccine_end_day_not_complete";
     public static final String VACCINE_START_DAY_NOT_COMPLETE = "vaccine_start_day_not_complete";
 
     public CertificateX509 getFromKid(String kid) throws IOException, ClassNotFoundException {
-        StoreService sService = new StoreService();
+        StoreService sService = new StoreService(baseUrl);
         return sService.getCertificateStore().getItem(kid);
     }
 
@@ -30,7 +39,7 @@ public class KeyService {
         TestInfo ti = new TestInfo();
         InfoStore passInfoStore = null;
         try {
-            passInfoStore = new StoreService().getPassInfoStore();
+            passInfoStore = new StoreService(baseUrl).getPassInfoStore();
         } catch (IOException e) {
             throw new DataErrorException("Impostazioni non trovate");
         }
@@ -61,7 +70,7 @@ public class KeyService {
 
         InfoStore passInfoStore = null;
         try {
-            passInfoStore = new StoreService().getPassInfoStore();
+            passInfoStore = new StoreService(baseUrl).getPassInfoStore();
         } catch (IOException e) {
             throw new DataErrorException("Informazioni del ministero non trovate");
         }

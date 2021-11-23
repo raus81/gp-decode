@@ -11,11 +11,19 @@ import java.io.File;
 import java.io.IOException;
 
 public class StoreService {
+    private String baseUrl = "c:/gamma/api/store";
 
+    public StoreService(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public StoreService() {
+
+    }
 
     public CertificateStore getCertificateStore() throws IOException {
 
-        return new CertificateStore();
+        return new CertificateStore(baseUrl);
 //        String filename = getClass().getClassLoader().getResource("").getPath() + "keys.dat";
 //        File keyPath = new File(filename);
 //
@@ -34,7 +42,7 @@ public class StoreService {
 
 
     public InfoStore getPassInfoStore() throws IOException {
-        return new InfoStore();
+        return new InfoStore(baseUrl);
 //        String filename = getClass().getClassLoader().getResource("").getPath() + "info.dat";
 //        File keyPath = new File(filename);
 //

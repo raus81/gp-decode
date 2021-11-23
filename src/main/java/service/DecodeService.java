@@ -26,6 +26,14 @@ import java.util.zip.Inflater;
 
 public class DecodeService {
 
+    private String baseUrl = "c:/gamma/api/store";
+
+    public DecodeService() {
+    }
+
+    public DecodeService(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
     private byte[] getBytes(String rawCose) throws DataErrorException {
         rawCose = rawCose.replaceAll("^HC1:", "");
@@ -42,7 +50,7 @@ public class DecodeService {
                 outputStream.write(buffer, 0, count);
             }
             data = outputStream.toByteArray();
-        } catch (DataFormatException e) {
+        } catch (Exception e) {
             throw new DataErrorException("Impossibile decodificare QR code");
         }
 
@@ -111,7 +119,7 @@ public class DecodeService {
 
     private PublicKey getCertificateFromKid(String kid) throws IOException, ClassNotFoundException {
 
-        KeyService ks = new KeyService();
+        KeyService ks = new KeyService(baseUrl);
         CertificateX509 x509Cert = ks.getFromKid(kid);
 
         // String x509Cert = "MIIEDzCCAfegAwIBAgIURldu5rsfrDeZtDBxrJ+SujMr2IswDQYJKoZIhvcNAQELBQAwSTELMAkGA1UEBhMCSVQxHzAdBgNVBAoMFk1pbmlzdGVybyBkZWxsYSBTYWx1dGUxGTAXBgNVBAMMEEl0YWx5IERHQyBDU0NBIDEwHhcNMjEwNTEyMDgxODE3WhcNMjMwNTEyMDgxMTU5WjBIMQswCQYDVQQGEwJJVDEfMB0GA1UECgwWTWluaXN0ZXJvIGRlbGxhIFNhbHV0ZTEYMBYGA1UEAwwPSXRhbHkgREdDIERTQyAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnL9+WnIp9fvbcocZSGUFlSw9ffW/jbMONzcvm1X4c+pXOPEs7C4/83+PxS8Swea2hgm/tKt4PI0z8wgnIehoj6OBujCBtzAfBgNVHSMEGDAWgBS+VOVpXmeSQImXYEEAB/pLRVCw/zBlBgNVHR8EXjBcMFqgWKBWhlRsZGFwOi8vY2Fkcy5kZ2MuZ292Lml0L0NOPUl0YWx5JTIwREdDJTIwQ1NDQSUyMHhcMSxPPU1pbmlzdGVybyUyMGRlbGxhJTIwU2FsdXRlLEM9SVQwHQYDVR0OBBYEFC4bAbCvpArrgZ0E+RrqS8V7TNNIMA4GA1UdDwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAgEAjxTeF7yhKz/3PKZ9+WfgZPaIzZvnO/nmuUartgVd3xuTPNtd5tuYRNS/1B78HNNk7fXiq5hH2q8xHF9yxYxExov2qFrfUMD5HOZzYKHZcjcWFNHvH6jx7qDCtb5PrOgSK5QUQzycR7MgWIFinoWwsWIrA1AJOwfUoi7v1aoWNMK1eHZmR3Y9LQ84qeE2yDk3jqEGjlJVCbgBp7O8emzy2KhWv3JyRZgTmFz7p6eRXDzUYHtJaufveIhkNM/U8p3S7egQegliIFMmufvEyZemD2BMvb97H9PQpuzeMwB8zcFbuZmNl42AFMQ2PhQe27pU0wFsDEqLe0ETb5eR3T9L6zdSrWldw6UuXoYV0/5fvjA55qCjAaLJ0qi16Ca/jt6iKuws/KKh9yr+FqZMnZUH2D2j2i8LBA67Ie0JoZPSojr8cwSTxQBdJFI722uczCj/Rt69Y4sLdV3hNQ2A9hHrXesyQslr0ez3UHHzDRFMVlOXWCayj3LIgvtfTjKrT1J+/3Vu9fvs1+CCJELuC9gtVLxMsdRc/A6/bvW4mAsyY78ROX27Bi8CxPN5IZbtiyjpmdfr2bufDcwhwzdwsdQQDoSiIF1LZqCn7sHBmUhzoPcBJdXFET58EKow0BWcerZzpvsVHcMTE2uuAUr/JUh1SBpoJCiMIRSl+XPoEA2qqYU=";
@@ -238,7 +246,7 @@ public class DecodeService {
     }
 
 
-    private GreenPassCertificateStatus checkStatus(GreenCertificate gc) throws DataErrorException{
+    private GreenPassCertificateStatus checkStatus(GreenCertificate gc) throws DataErrorException {
         CertificateType type = gc.getType();
         GreenPassCertificateStatus cs = GreenPassCertificateStatus.NOT_VALID;
         switch (type) {
@@ -274,14 +282,14 @@ public class DecodeService {
         return GreenPassCertificateStatus.VALID;
     }
 
-    private GreenPassCertificateStatus verifyTest(List<Test> tests) throws DataErrorException{
+    private GreenPassCertificateStatus verifyTest(List<Test> tests) throws DataErrorException {
         Test test = tests.get(0);
 
         TestInfo ti = null;
         try {
             ti = new KeyService().getTestInfoFromName(test.getTypeOfTest());
         } catch (Exception e) {
-           throw new DataErrorException("Impossibile trovare informazioni sul test");
+            throw new DataErrorException("Impossibile trovare informazioni sul test");
         }
 
         LocalDateTime localDateTime = OffsetDateTime.parse(test.getDateTimeOfCollection()).toLocalDateTime();
@@ -304,7 +312,7 @@ public class DecodeService {
 
         VaccineInfo vaccineInfo = null;
         try {
-            vaccineInfo = new KeyService().getVaccineInfoFromName(medicinalProduct);
+            vaccineInfo = new KeyService(baseUrl).getVaccineInfoFromName(medicinalProduct);
         } catch (Exception e) {
             throw new DataErrorException("Impossibile ottenere informazione su vacciono");
         }
@@ -320,19 +328,17 @@ public class DecodeService {
         LocalDate endDate;
         String message = "";
         if (doseNumber >= totalSeriesOfDoses) {
-            startDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayComplete()));
-            endDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayComplete()));
+            startDate = dateOfVaccination.plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayComplete()));
+            endDate = dateOfVaccination.plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayComplete()));
 
         } else {
-            startDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayNotComplete()));
-            endDate = LocalDate.now().plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayNotComplete()));
+            startDate = dateOfVaccination.plusDays(Long.valueOf(vaccineInfo.getVaccineStartDayNotComplete()));
+            endDate = dateOfVaccination.plusDays(Long.valueOf(vaccineInfo.getVaccineEndDayNotComplete()));
         }
         boolean valid = (now.isAfter(startDate) || now.isEqual(startDate)) && (now.isBefore(endDate));
         if (startDate.isAfter(now)) {
-            message = "Vaccino non ancora valido";
             return GreenPassCertificateStatus.NOT_VALID_YET;
         } else if (endDate.isBefore(now)) {
-            message = "Vaccino scaduto";
             return GreenPassCertificateStatus.NOT_VALID;
         }
         return GreenPassCertificateStatus.VALID;

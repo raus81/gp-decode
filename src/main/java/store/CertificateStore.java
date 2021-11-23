@@ -8,14 +8,15 @@ import java.io.IOException;
 import java.util.Base64;
 
 public class CertificateStore extends BaseStore<CertificateX509> {
-    public CertificateStore() {
+    public CertificateStore(String baseUrl) {
+        super(baseUrl);
         baseName = "cert";
     }
 
     @NotNull
     private String getHexKey(String key) {
         byte[] bytes = Base64.getDecoder().decode(key.getBytes());
-        String hexKey = Hex.encodeHexString( bytes );
+        String hexKey = Hex.encodeHexString(bytes);
         return hexKey;
     }
 

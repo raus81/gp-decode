@@ -8,13 +8,18 @@ import java.util.Base64;
 
 public class BaseStore<T extends Serializable> {
     public String baseName = "";
+    public String basePath = "c:/gamma/api/store";
+
+    public BaseStore(String basePath) {
+        if (!basePath.equals("")) {
+            this.basePath = basePath;
+        }
+    }
 
     public T putItem(String key, T item) throws IOException {
 
         key = key.replace("\\", "_").replace("/", "_");
-        Path baseDir = new File(getClass().getClassLoader()
-                .getResource("")
-                .getFile()).toPath();
+        Path baseDir = new File(basePath).toPath();
 
         //byte[] decode = Base64.getDecoder().decode(key.getBytes());
 
@@ -37,9 +42,7 @@ public class BaseStore<T extends Serializable> {
 
     public T getItem(String key) throws IOException, ClassNotFoundException {
         key = key.replace("\\", "_").replace("/", "_");
-        Path baseDir = new File(getClass().getClassLoader()
-                .getResource("")
-                .getFile()).toPath();
+        Path baseDir = new File(basePath).toPath();
         Path file = Paths.get(baseDir.toAbsolutePath() + "/" + baseName + "/" + key);
 
         System.out.println(file.toAbsolutePath());
