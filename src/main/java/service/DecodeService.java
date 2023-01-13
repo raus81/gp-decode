@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import com.upokecenter.cbor.CBORObject;
+import edu.emory.mathcs.backport.java.util.Arrays;
 import exception.DataErrorException;
 import model.*;
 import model.decoder.*;
 import nl.minvws.encoding.Base45;
+import store.InfoStore;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,6 +22,7 @@ import java.security.cert.CertificateFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -359,4 +362,25 @@ public class DecodeService {
 
         return certificateModel;
     }
+
+
+    public List<String> getRevocated() {
+        InfoStore is = new InfoStore(baseUrl);
+        List<String> list = null;
+        try {
+            PassInfo blackList = is.getItem("black_list_uvci_black_list_uvci");
+            String[] split = blackList.getValue().split(";");
+            list = Arrays.asList(split);
+        } catch (IOException e) {
+            // e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            // e.printStackTrace();
+        }
+
+
+        return list;
+
+    }
+
+
 }

@@ -1,9 +1,12 @@
 package service;
 
 import exception.DataErrorException;
+import jnr.ffi.annotations.In;
 import model.CertificateX509;
+import model.decoder.PassInfo;
 import org.junit.jupiter.api.Test;
 import store.CertificateStore;
+import store.InfoStore;
 
 import java.io.IOException;
 
@@ -11,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InfoSyncTest {
 
-    public static final String C_GAMMA_STORE = "c:/gamma/store";
+    public static final String C_GAMMA_STORE = "c:/gamma/api/store";
 
     @Test
     void downloadKeys() throws IOException {
@@ -43,8 +46,16 @@ class InfoSyncTest {
     }
 
     @Test
-    void checkVersion() throws  DataErrorException {
+    void checkVersion() throws DataErrorException {
         InfoSync is = new InfoSync(C_GAMMA_STORE);
         is.checkVersion();
+    }
+
+    @Test
+    void getRevoche() throws IOException, ClassNotFoundException {
+        InfoStore is = new InfoStore(C_GAMMA_STORE);
+        PassInfo blackList = is.getItem("black_list_uvci_black_list_uvci");
+        String[] split = blackList.getValue().split(";");
+        System.out.println(split);
     }
 }
